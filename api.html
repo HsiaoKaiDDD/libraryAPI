@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>libraryAPI</title>
+    <style>
+        *{
+            padding: 0px;
+            margin: 0px;
+            box-sizing: border-box;
+        }
+        header{
+            width: 100%;
+            height: 150px;
+            background-color: chocolate;
+            font-size: 100px;
+            text-align: center;
+        }
+        nav{
+            width: 10%;
+            height: 100vh;
+            background-color: bisque;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: relative;
+            
+        }
+        button{
+            width: 150px;
+            height: 30px;
+        }
+        main {
+            width: 90%;
+            height: 100vh;
+            background-color: skyblue;
+            position: absolute;
+            top: 150px;
+            left: 200px;
+            display: flex;
+            justify-content: center;
+        }
+        main .form{
+            width: 700px;
+            height: 300px;
+            
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: absolute;
+            top: 100px;
+            left: calc(50% - 350px);
+        }
+        main .form input{
+            width: 300px;
+            
+        }
+        main .book-move{
+            display: none;
+            position: absolute;
+            top: 100px;
+            left: calc(50% - 475px);
+        }
+        main .allbook{
+            width:750px;
+            background-color: yellow;
+            display: flex;
+            position: relative;
+        }
+        main .allbook div{
+            width: 250px;
+            height: 50px;
+            background-color: aqua;
+            text-align: center;
+            line-height: 50px;
+            border: 1px solid;
+        }
+        main .books-nav{
+            width: 950px;
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: calc(50% - 375px);
+        }
+        main .books-nav div{
+            width: 250px;
+            height: 50px;
+            background-color: aqua;
+            text-align: center;
+            line-height: 50px;
+            border: 1px solid;
+        }
+        main .booksBox{
+            width: 950px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        main button#sure ,#cancel ,#start_search{
+            width: 100px;
+            height: 30px;
+            display: none;
+        }
+        main input#search{
+            display: none;
+            height: 30px;
+        }
+        main .btn-box{
+            width: 600px;
+            display: flex;
+            justify-content: space-between; 
+        }
+        button #modify_btn{
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <header>後臺圖書資料庫</header>
+    <nav>
+        <button onclick="add_book()">新增書籍資料</button>
+        <button onclick="allData()">所有圖書</button>
+    </nav>
+    <main>
+        <form class="form">
+            <span>ISBN:<input id="isbn" type="text" placeholder="例如:8347834034"></span>
+            <span>書名:<input id="book-name" type="text" placeholder="請輸入書名"></span>
+            <span>作者:<input id="author" type="text" placeholder="請書入作者"></span>
+            <!-- <span>製作日期:<input id="create-at" type="text" placeholder="請輸入製作日期"></span> -->
+            <!-- <span>更新日期:<input id="updated" type="text" placeholder="請輸入更新日期"></span> -->
+            <div class="buttons">
+                <button type="submit">新增</button>
+                <button type="reset">重設</button>
+            </div>  
+        </form>
+        <div class="btn-box">
+            <button id = "sure" onclick = sure_btn()>確定修改</button>
+            <button id = "cancel" onclick = cancel_btn()>取消修改</button>
+            
+            <input type="text" id="search">
+            <button id="start_search" onclick = search()>搜尋</button> 
+        </div>
+        <div class="books-nav">
+            <div id="writer">作者</div>
+            <div id="books">書名</div>
+            <div id="isbn-number">ISBN</div>
+        </div>
+        <!-- 下面設定直接把book-move清空，防止資料累加，所以上面需再做一個 -->
+        <!-- book-move為生成資料的區塊 -->
+        <div class="book-move"></div>
+    </main>
+
+    <script>
+        const main = document.querySelector('main')
+        const bookMove = document.querySelector('.book-move')
+        const form = document.querySelector('.form')
+        const booksNav = document.querySelector('.books-nav')
+        const url ='https://isbn-api.digipack.io/books'
+        const sure = document.querySelector('#sure')
+        const cancel = document.querySelector('#cancel')
+        const start_search = document.querySelector('#start_search')
+        const input_search = document.querySelector('#search')
+        const modify_style = document.querySelector('#modify_btn')
+       
+        // 增
+        // 先取得form的資料在傳送至api
+        function add_book(){
+            // 處理畫面切換時會顯示的東西
+            form.style.display = "flex"
+            bookMove.style.display = "none"
+            booksNav.style.display = "none"
+            sure.style.display = "none"
+            cancel.style.display = "none"
+            start_search.style.display = "none"
+            input_search.style.display = "none"
+            // 防止每次來回按時資料會重複累加
+            bookMove.innerHTML= ""
+
+            // 取得"新增資料form表單"中的資料
+            // addEventListener為一個監聽事件
+            form.addEventListener('submit', function(event) {
+                // 阻止表單提交
+                event.preventDefault(); 
+
+                // const每個輸入資料的值
+                const isbn = document.querySelector('#isbn').value;
+                const bookName = document.querySelector('#book-name').value;
+                const author = document.querySelector('#author').value;
+                // const createAt = document.querySelector('#create-at').value;
+                // const updated = document.querySelector('#updated').value;
+
+                // const一個formData裡面裝所有輸入值得資料
+                const formData = new FormData(form)
+                formData.append('author', author);
+                formData.append('isbn', isbn);
+                formData.append('title', bookName);
+                console.log(formData)
+
+                fetch(url,{
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error(error));
+                });
+                
+        }
+
+        // 點擊所有圖書按鈕
+        function allData(){
+            // 處理畫面切換時會顯示的東西
+            form.style.display = "none"
+            bookMove.style.display = "block"
+            booksNav.style.display = "flex"
+            sure.style.display = "block"
+            cancel.style.display = "block"
+            start_search.style.display = "block"
+            input_search.style.display = "block"
+            // 避免重複點擊時會累加資料
+            bookMove.innerHTML= ""
+            // 將所有圖書資料讀取
+            fetch(url,{
+                method: 'GET'
+            })
+            .then(function(response){
+                return response.json();
+            })
+            .then(function(data){
+                console.log(data);  
+                // 因為data如果離開then這個函數後就沒有作用域了
+                data.forEach(element => {
+                    bookMove.innerHTML +=`
+                    <div class ="booksBox">
+                        <button onclick="delete_book(this)" >刪除</button>
+                        <div class="allbook">
+                            <div id="writer" contenteditable="false" >${element.author}</div>
+                            <div id="books" contenteditable="false">${element.title}</div>
+                            <div id="isbn-number" data-isbn="${element.isbn}">${element.isbn}
+                        </div>
+                    </div>
+                        <button id="modify_btn" onclick="modify()">修改作者與書名</button>
+                    </div>`;
+                });
+            });
+            
+        }
+        
+      
+    // 刪
+    //  刪除資料，點擊 刪除 按鈕時
+        function delete_book(button) {
+            console.log(button)
+            // paremtElement是指定到父元素
+            // isbn是取得id為data-isbn
+            const isbn = button.parentElement.querySelector("#isbn-number").getAttribute("data-isbn");
+            console.log(isbn)
+
+            const formData = new FormData();
+            // 利用append將數據添加到formdata中
+            formData.append('isbn', isbn);
+
+            // 將 FormData 物件轉換成 form-data 格式
+            const formBody = new URLSearchParams(formData).toString();
+
+        
+            fetch(url +'/' + isbn, {
+                method: 'DELETE',
+                body: formBody
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                throw new Error('Network response was not ok');
+                }
+                console.log('Book deleted successfully.');
+                
+                // 即時更新刪除的圖書
+                const bookRow = button.closest('div');
+                bookRow.remove();
+            })
+            .catch(function(error) {
+                console.error('There was a problem deleting the book:', error);
+                // 可以在這裡顯示錯誤訊息或執行其他錯誤處理程序
+            });
+        }
+
+    //  改
+    //  出現報錯PUT https://isbn-api.digipack.io/books/[object%20HTMLInputElement] 404     
+    //  讓資料可進行些改 點擊 修改 按鈕
+        // function modify(){
+        //     const editableDiv = document.querySelectorAll('#writer, #books')
+        //     editableDiv.forEach(element => {
+        //         element.contentEditable = true;
+        //     })
+        // } 
+        // function sure_btn(){
+        //     const modifyData = new FormData()
+            
+        //     const title = document.querySelector('#writer').innerHTML;
+        //     const author = document.querySelector('#books').innerHTML;
+            
+        //     modifyData.append('title', title)
+        //     modifyData.append('author', author)
+        //     fetch(url +'/' + isbn,{
+        //         method : 'put',
+        //         body: modifyData,
+        //     })
+        //     .then(response => response.json)
+        //     .then(data => console.log(data))
+        // }
+        
+     
+            
+    //  查    
+            // input_search.addEventListener('change',() => {
+            //     const inputValue = input_search.value
+                
+            //     console.log(inputValue)
+               
+            //     })
+
+            // function search(){
+            //     if(inputValue.includes(data))
+            //     console.log(data)
+            //     formData.append('title', inputValue)
+            //     fetch(url +'/'+ search,{
+            //     method: 'get',
+            //     body: formData,
+            //     })
+            //     .then(response => response.json())
+            //     .then(data => console.log(data))
+
+            // }
+        
+            
+    
+    
+
+            
+           
+        
+      
+    
+        
+    </script>
+    <!-- 任務一：
+    依照API的要求, 建立一個輸入書籍資料的頁面。
+    讓使用者可以在系統新增新的書籍資料。
+    必須清楚的提示使用者新增成功還是失敗(包含錯誤訊息)。
+
+    任務二：
+    依照API的要求, 建立一個列表頁可以顯示所有書籍列表。
+
+    任務三：
+    在列表頁製作刪除按鈕, 可以指定刪除既有的書籍資料。
+
+    任務四：
+    在列表頁製作編輯按鈕。點下編輯頁後可以直接讓使用者輸入指定書籍的新名稱或作者。
+
+    任務五：
+    在列表頁製作搜尋功能，在輸入框輸入文字後即可搜尋符合關鍵字的書籍並顯示在列表中。 -->
+</body>
+</html>
